@@ -1,0 +1,17 @@
+{
+  "name": "garticphone-image-drawer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo \"Error: not set\" && exit 1"
+  },
+  "author": "lavieennoir",
+  "license": "MIT",
+  "dependencies": {
+    "react-dom": "^17.0.1"
+  },
+  "devDependencies": {
+    "webpack": "^5.18.0"
+  }
+}
