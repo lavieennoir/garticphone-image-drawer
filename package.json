@@ -9,10 +9,7 @@
   },
   "author": "lavieennoir",
   "license": "MIT",
-  "dependencies": {
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@babel/core": "^7.12.10",
     "@babel/plugin-syntax-class-properties": "^7.12.1",

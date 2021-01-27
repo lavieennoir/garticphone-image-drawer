@@ -1,6 +1,15 @@
-import ReactTestUtils from "react-dom/test-utils";
-
 import Painter from "./painter";
+import PainterView from "./painter-view";
+import UIInjector from "./ui-injector";
 
-window.ReactTestUtils = ReactTestUtils;
-window.Painter = new Painter();
+const painter = new Painter();
+const painterView = new PainterView(painter);
+const uiInjector = new UIInjector(painterView);
+
+uiInjector.inject();
+
+window.DATA = {
+  painter,
+  painterView,
+  uiInjector,
+};

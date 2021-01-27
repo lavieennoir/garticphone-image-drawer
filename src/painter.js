@@ -1,14 +1,15 @@
-import ReactTestUtils from "react-dom/test-utils";
-import reactTriggerChange from "./lib/react-trigger-change";
-window.TESTMY = reactTriggerChange;
+import reactTriggerEvent from "./lib/react-trigger-change";
 
+const awaitNextTick = () => new Promise((res) => requestAnimationFrame(res));
 export default class Painter {
   COLOR_INPUT_SELECTOR = '.draw input[type="color"]';
   THICKNESS_SELECTOR = ".draw .options > div > div";
   PEN_TOOL_SELECTOR = ".draw .tool.pen";
-  CANVAS_SELECTOR = ".draw .core";
+  CANVAS_SELECTOR = ".draw .core canvas:last-child";
 
   color = "#000000";
+  isLoading = false;
+  stopRequested = false;
 
   setColor = (hexColor) => {
     const colorInput = document.querySelector(this.COLOR_INPUT_SELECTOR);
@@ -19,18 +20,8 @@ export default class Painter {
 
     colorInput.value = hexColor;
     this.color = hexColor;
-    reactTriggerChange(colorInput);
-    // Simulate.change(document.querySelector(".draw .colors"), {
-    //   target: { value: hexColor },
-    // });
-    // ReactTestUtils.Simulate.click(colorInput);
-    // ReactTestUtils.Simulate.input(colorInput, { target: { value: hexColor } });
-    // ReactTestUtils.Simulate.change(colorInput, { target: { value: hexColor } });
-    // ReactTestUtils.Simulate.keyDown(colorInput, {
-    //   key: "Enter",
-    //   keyCode: 13,
-    //   which: 13,
-    // });
+
+    reactTriggerEvent(colorInput, "change");
   };
 
   selectPencilTool = () => {
@@ -41,70 +32,120 @@ export default class Painter {
   };
 
   loadImageData = async (url, width, height) => {
-    const res = await fetch(url);
-    const imageBlob = await res.blob();
+    try {
+      const res = await fetch(url);
+      const imageBlob = await res.blob();
 
-    // Using optional size for image
-    const image = new Image(width, height);
+      // Using optional size for image
+      const image = new Image(width, height);
 
-    await new Promise((resolve) => {
-      image.onload = resolve;
+      await new Promise((resolve) => {
+        image.onload = resolve;
 
-      // Create a local URL for that image and print it
-      const newImgBlob = URL.createObjectURL(imageBlob);
-      image.src = newImgBlob;
+        // Create a local URL for that image and print it
+        const newImgBlob = URL.createObjectURL(imageBlob);
+        image.src = newImgBlob;
 
-      if (this.imgBlob) {
-        URL.revokeObjectURL(this.imgBlob);
-        this.imgBlob = newImgBlob;
-      }
-    });
+        if (this.imgBlob) {
+          URL.revokeObjectURL(this.imgBlob);
+          this.imgBlob = newImgBlob;
+        }
+      });
 
-    const canvas = document.createElement("canvas", {
-      width: image.naturalWidth,
-      height: image.naturalHeight,
-    });
+      const canvas = document.createElement("canvas", {
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
 
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(image, 0, 0);
-    const imageData = ctx.getImageData(
-      0,
-      0,
-      image.naturalWidth,
-      image.naturalHeight
-    );
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(image, 0, 0);
+      const imageData = ctx.getImageData(
+        0,
+        0,
+        image.naturalWidth,
+        image.naturalHeight
+      );
 
-    return imageData;
+      return imageData;
+    } catch (e) {
+      throw e;
+    }
   };
 
-  drawPoint = (x, y) => {
-    Simulate.click(this.canvas, { clientX: x, clientY: y });
+  drawPoint = async (x, y, globalX, globalY) => {
+    const options = {
+      clientX: globalX,
+      clientY: globalY,
+      movementX: 0,
+      movementY: 0,
+      offsetX: x,
+      offsetY: y,
+      pageX: globalX,
+      pageY: globalY,
+      screenX: globalX,
+      screenY: globalY + 3,
+      x: globalX,
+      y: globalY,
+      view: window,
+    };
+
+    reactTriggerEvent(this.canvas, "mousedown", options);
+    await awaitNextTick();
+    reactTriggerEvent(this.canvas, "mouseup", options);
+    await awaitNextTick();
   };
 
   drawImage = async (url) => {
-    this.selectPencilTool();
-    const { data, width } = await this.loadImageData(url);
+    try {
+      this.isInProgress = true;
 
-    this.canvas = document.querySelector(this.CANVAS_SELECTOR);
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i].toString(16).padStart(2, "0");
-      const g = data[i + 1].toString(16).padStart(2, "0");
-      const b = data[i + 2].toString(16).padStart(2, "0");
+      this.selectPencilTool();
+      const { data, width } = await this.loadImageData(url);
 
-      // Skip Alpha for now
-      // const a = data[i+3].toString(16).padStart(2,"0");
+      this.canvas = document.querySelector(this.CANVAS_SELECTOR);
+      const { top, left } = this.canvas.getBoundingClientRect();
 
-      const newColor = `#${r}${g}${b}`;
+      for (let i = 0; i < data.length; i += 4) {
+        if (this.stopRequested) {
+          break;
+        }
 
-      if (this.color !== newColor) {
-        this.setColor(newColor);
+        const r = data[i].toString(16).padStart(2, "0");
+        const g = data[i + 1].toString(16).padStart(2, "0");
+        const b = data[i + 2].toString(16).padStart(2, "0");
+
+        // Skip Alpha for now
+        // const a = data[i+3].toString(16).padStart(2,"0");
+
+        const newColor = `#${r}${g}${b}`;
+
+        if (this.color !== newColor) {
+          this.setColor(newColor);
+          await awaitNextTick();
+        }
+
+        const pixelIdx = Math.floor(i / 4);
+        const canvasX = pixelIdx % width;
+        const canvasY = Math.floor(pixelIdx / width);
+        await this.drawPoint(
+          canvasX,
+          canvasY,
+          left + canvasX + 3,
+          top + canvasY
+        );
       }
-
-      const pixelIdx = Math.floor(i / 4);
-      const canvasX = pixelIdx % width;
-      const canvasY = Math.floor(pixelIdx / width);
-      this.drawPoint(canvasX, canvasY);
+    } catch (e) {
+      throw e;
+    } finally {
+      this.canvas = null;
+      this.isInProgress = false;
+      this.stopRequested = false;
     }
-    this.canvas = null;
+  };
+
+  requestStop = () => {
+    if (this.isInProgress) {
+      this.stopRequested = true;
+    }
   };
 }
