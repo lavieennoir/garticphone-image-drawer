@@ -1,4 +1,6 @@
-import { Simulate } from "react-dom/test-utils";
+import ReactTestUtils from "react-dom/test-utils";
+import reactTriggerChange from "./lib/react-trigger-change";
+window.TESTMY = reactTriggerChange;
 
 export default class Painter {
   COLOR_INPUT_SELECTOR = '.draw input[type="color"]';
@@ -17,7 +19,18 @@ export default class Painter {
 
     colorInput.value = hexColor;
     this.color = hexColor;
-    Simulate.change(node);
+    reactTriggerChange(colorInput);
+    // Simulate.change(document.querySelector(".draw .colors"), {
+    //   target: { value: hexColor },
+    // });
+    // ReactTestUtils.Simulate.click(colorInput);
+    // ReactTestUtils.Simulate.input(colorInput, { target: { value: hexColor } });
+    // ReactTestUtils.Simulate.change(colorInput, { target: { value: hexColor } });
+    // ReactTestUtils.Simulate.keyDown(colorInput, {
+    //   key: "Enter",
+    //   keyCode: 13,
+    //   which: 13,
+    // });
   };
 
   selectPencilTool = () => {
