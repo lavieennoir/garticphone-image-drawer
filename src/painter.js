@@ -1,6 +1,11 @@
 import reactTriggerEvent from "./lib/react-trigger-change";
 
-const awaitNextTick = () => new Promise((res) => requestAnimationFrame(res));
+const DRAW_CALLS_PER_RENDER = 500;
+const awaitNextTick = (i) =>
+  i % DRAW_CALLS_PER_RENDER === 0
+    ? new Promise((res) => requestAnimationFrame(res))
+    : undefined;
+
 export default class Painter {
   COLOR_INPUT_SELECTOR = '.draw input[type="color"]';
   THICKNESS_SELECTOR = ".draw .options > div > div";
@@ -72,7 +77,7 @@ export default class Painter {
     }
   };
 
-  drawPoint = async (x, y, globalX, globalY) => {
+  drawPoint = async (x, y, globalX, globalY, i) => {
     const options = {
       clientX: globalX,
       clientY: globalY,
@@ -90,9 +95,9 @@ export default class Painter {
     };
 
     reactTriggerEvent(this.canvas, "mousedown", options);
-    await awaitNextTick();
+    await awaitNextTick(i);
     reactTriggerEvent(this.canvas, "mouseup", options);
-    await awaitNextTick();
+    await awaitNextTick(i);
   };
 
   drawImage = async (url) => {
@@ -121,7 +126,7 @@ export default class Painter {
 
         if (this.color !== newColor) {
           this.setColor(newColor);
-          await awaitNextTick();
+          await awaitNextTick(i);
         }
 
         const pixelIdx = Math.floor(i / 4);
@@ -131,7 +136,8 @@ export default class Painter {
           canvasX,
           canvasY,
           left + canvasX + 3,
-          top + canvasY
+          top + canvasY,
+          i
         );
       }
     } catch (e) {

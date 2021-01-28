@@ -111,6 +111,14 @@
             }
           }
 
+          function getNextColor(color) {
+            var newColor = `#${(parseInt(color.substr(1), 16) + 1).toString(
+              16
+            )}`;
+
+            return newColor === "#1000000" ? "#000000" : newColor;
+          }
+
           if (eventName === "change") {
             // React 16
             // Cache artificial value property descriptor.
@@ -133,7 +141,8 @@
             // Remove artificial value property.
             // Restore initial value to trigger event with it.
             initialValue = node.value;
-            node.value = initialValue + "#";
+            // node.value = initialValue + "#";
+            node.value = getNextColor(initialValue);
             deletePropertySafe(node, "value");
             node.value = initialValue;
 
