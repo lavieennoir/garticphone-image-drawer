@@ -1,10 +1,5 @@
 import reactTriggerEvent from "./lib/react-trigger-change";
-
-const DRAW_CALLS_PER_RENDER = 500;
-const awaitNextTick = (i) =>
-  i % DRAW_CALLS_PER_RENDER === 0
-    ? new Promise((res) => requestAnimationFrame(res))
-    : undefined;
+import { awaitNextTick } from "./utils/wait-utils";
 
 export default class Painter {
   COLOR_INPUT_SELECTOR = '.draw input[type="color"]';

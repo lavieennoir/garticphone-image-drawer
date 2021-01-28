@@ -7,9 +7,3 @@ const painterView = new PainterView(painter);
 const uiInjector = new UIInjector(painterView);
 
 uiInjector.inject();
-
-window.DATA = {
-  painter,
-  painterView,
-  uiInjector,
-};
